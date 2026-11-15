@@ -1,0 +1,42 @@
+export type Instrument = {
+  id: string;
+  symbol: string;
+  name: string;
+  market: string;
+  currency: string;
+  kind: string;
+  aliases?: string;
+};
+export type Point = { time: number; close: number; volume?: number };
+export type Quote = Instrument & {
+  price: number;
+  previous: number | null;
+  change: number | null;
+  percent: number | null;
+  open: number | null;
+  high: number | null;
+  low: number | null;
+  volume: number | null;
+  marketCap: number | null;
+  asOf: number;
+  timezone: string;
+  state: string;
+  basis: string;
+  unit: string;
+  source: string;
+  sourceUrl: string;
+  fetched: number;
+  stale: boolean;
+  spark: Point[];
+  error?: string;
+};
+export type Chart = {
+  id: string;
+  range: string;
+  points: Point[];
+  source: string;
+  timezone: string;
+  fetched: number;
+  stale: boolean;
+  message?: string;
+};

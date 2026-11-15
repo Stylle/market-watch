@@ -1,0 +1,6 @@
+services:
+  market-watch:
+    build: .
+    image: market-watch:local
+    ports: ["28185:8080"]
+    restart: unless-stopped
