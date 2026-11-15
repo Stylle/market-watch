@@ -880,7 +880,7 @@ onUnmounted(() => {
     </div>
     <button class="text-button danger" @click="reset">恢复默认自选</button>
     <section class="about">
-      <h3>关于观市 · Market Watch 0.1.0</h3>
+      <h3>关于观市 · Market Watch 0.1.1</h3>
       <p>
         自选、排序和设置只保存在当前浏览器。导出文件只包含设备偏好，不包含密钥。
       </p>
