@@ -282,13 +282,15 @@ async function loadChart() {
     if (id === chartSeq) chartLoading.value = false;
   }
 }
-function select(i: Instrument) {
+function select(i: Instrument, event: MouseEvent) {
   prefs.selected = i.id;
   mobileDetail.value = true;
-  nextTick(() => document.querySelector<HTMLElement>(".detail-title")?.focus());
+  if (event.detail === 0)
+    nextTick(() => document.querySelector<HTMLElement>(".detail-title")?.focus());
 }
-function back() {
+function back(event: MouseEvent) {
   mobileDetail.value = false;
+  if (event.detail !== 0) return;
   nextTick(() =>
     document
       .querySelector<HTMLElement>(".watch-row.selected .row-select")
@@ -528,8 +530,8 @@ onUnmounted(() => {
           <button
             class="row-select"
             :aria-label="'查看 ' + i.symbol + ' ' + i.name"
-            :aria-pressed="prefs.selected === i.id"
-            @click="select(i)"
+            :aria-current="prefs.selected === i.id ? 'true' : undefined"
+            @click="select(i, $event)"
           >
             <AssetIcon :id="i.id" :kind="i.kind" /><span class="row-identity"
               ><strong>{{ i.symbol }}</strong
@@ -880,7 +882,7 @@ onUnmounted(() => {
     </div>
     <button class="text-button danger" @click="reset">恢复默认自选</button>
     <section class="about">
-      <h3>关于观市 · Market Watch 0.1.2</h3>
+      <h3>关于观市 · Market Watch 0.1.3</h3>
       <p>
         自选、排序和设置只保存在当前浏览器。导出文件只包含设备偏好，不包含密钥。
       </p>

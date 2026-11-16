@@ -3,13 +3,18 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {validate,searchLocal} from '../src/preferences.js';
 
-test('hover feedback is pointer-only and distinct from persistent selected state',()=>{
+test('watchlist never paints a persistent selected row; filter choices remain visible',()=>{
  const css=readFileSync(new URL('../src/style.css',import.meta.url),'utf8');
  assert.match(css,/@media \(hover: hover\) and \(pointer: fine\)\s*\{\s*button:hover:not\(:disabled\):not\(\[aria-pressed="true"\]\)\s*\{\s*background: var\(--subtle\)/);
- assert.match(css,/\.watch-row.selected\s*\{\s*background: var\(--selected\)/);
+ assert.doesNotMatch(css,/\.watch-row\.selected\s*\{/);
+ assert.match(css,/\.watch-row \.row-select:hover:not\(:disabled\)\s*\{\s*background: transparent/);
+ assert.match(css,/\.row-select:focus:not\(:focus-visible\)\s*\{\s*outline: none/);
  const app=readFileSync(new URL('../src/App.vue',import.meta.url),'utf8');
  assert.match(app,/:aria-pressed="filter === id"/);
  assert.match(app,/:aria-pressed="period === id"/);
+ assert.match(app,/:aria-current="prefs.selected === i.id \? 'true' : undefined"/);
+ assert.match(app,/function back\(event: MouseEvent\)[\s\S]*?if \(event.detail !== 0\) return;/);
+ assert.match(app,/@click="select\(i, \$event\)"/);
 });
 
 test('existing CN watchlist IDs remain importable and Chinese searchable',()=>{

@@ -258,14 +258,6 @@ svg {
   padding: 0 2px;
   min-width: 0;
 }
-.watch-row.selected {
-  background: var(--selected);
-  border-color: transparent;
-  border-radius: 10px;
-}
-.watch-row.selected + .watch-row {
-  border-top-color: transparent;
-}
 .row-select {
   display: grid;
   grid-template-columns: 36px minmax(0, 1fr) 64px 98px;
@@ -280,8 +272,12 @@ svg {
   padding: 13px 8px 13px 0;
   min-height: 78px;
 }
-.row-select:hover:not(:disabled) {
+.watch-row .row-select:hover:not(:disabled) {
   background: transparent;
+}
+/* The current detail item is state, not a permanently highlighted list row. */
+.row-select:focus:not(:focus-visible) {
+  outline: none;
 }
 .asset-icon {
   display: inline-flex;
