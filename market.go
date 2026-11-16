@@ -72,6 +72,12 @@ type Chart struct {
 }
 
 var builtins = []Instrument{
+	{"y:000300.SS", "000300", "沪深300", "SSE", "CNY", "index", "沪深 沪深300指数 hs300 csi300"},
+	{"y:000001.SS", "000001", "上证指数", "SSE", "CNY", "index", "上证综指 上证综合指数 shanghai"},
+	{"y:399001.SZ", "399001", "深证成指", "SZSE", "CNY", "index", "深圳成指 深证成份指数"},
+	{"y:399006.SZ", "399006", "创业板指", "SZSE", "CNY", "index", "创业板 创业板指数"},
+	{"y:600519.SS", "600519", "贵州茅台", "SSE", "CNY", "stock", "茅台 gzmt"},
+	{"y:300750.SZ", "300750", "宁德时代", "SZSE", "CNY", "stock", "宁德 ndsd catl"},
 	{"y:AAPL", "AAPL", "Apple Inc.", "NASDAQ", "USD", "stock", "苹果 pingguo apple"},
 	{"y:NVDA", "NVDA", "NVIDIA Corporation", "NASDAQ", "USD", "stock", "英伟达 yingweida"},
 	{"y:0700.HK", "0700", "腾讯控股", "HKEX", "HKD", "stock", "腾讯 騰訊 tencent 700"},
@@ -175,7 +181,7 @@ func (s *marketService) request(ctx context.Context, raw string, out any) error 
 		return errors.New("invalid upstream")
 	}
 	switch u.Host {
-	case "query1.finance.yahoo.com", "query2.finance.yahoo.com", "api.exchange.coinbase.com", "api.gold-api.com":
+	case "query1.finance.yahoo.com", "query2.finance.yahoo.com", "api.exchange.coinbase.com", "api.gold-api.com", "searchapi.eastmoney.com", "push2.eastmoney.com", "push2his.eastmoney.com", "web.ifzq.gtimg.cn", "web3.ifzq.gtimg.cn":
 	default:
 		return errors.New("invalid upstream")
 	}
@@ -414,6 +420,16 @@ func previousClose(y yahooChart) *float64 {
 	return nil
 }
 func (s *marketService) loadQuote(ctx context.Context, id string) (any, error) {
+	if secid, ok := chinaSecurity(id); ok {
+		q, err := s.chinaQuote(ctx, id, secid)
+		if err == nil {
+			return q, nil
+		}
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
+		return s.tencentQuote(ctx, id)
+	}
 	i := instrument(id)
 	q := Quote{ID: id, Symbol: i.Symbol, Name: i.Name, Market: i.Market, Currency: i.Currency, Kind: i.Kind, Timezone: "UTC", Basis: "较昨收", Fetched: time.Now().Unix(), Spark: []Point{}}
 	switch id[0] {
@@ -575,6 +591,9 @@ func (s *marketService) coinbaseChart(ctx context.Context, id, period string) (C
 }
 func (s *marketService) chart(ctx context.Context, id, period string) (Chart, error) {
 	v, stale, e := s.cached(ctx, "c:"+id+":"+period, 5*time.Minute, func(ctx context.Context) (any, error) {
+		if secid, ok := chinaSecurity(id); ok {
+			return s.chinaChart(ctx, id, secid, period)
+		}
 		switch id[0] {
 		case 'c':
 			return s.coinbaseChart(ctx, id, period)
@@ -686,17 +705,19 @@ func (s *marketService) cryptoSearch(ctx context.Context, query string) []Instru
 }
 
 func (s *marketService) search(ctx context.Context, query string) []Instrument {
+	query = strings.TrimSpace(query)
+	// Providers run concurrently: a slow overseas endpoint must not add its full
+	// timeout on top of the domestic search timeout. Buffered channels avoid leaks
+	// if the browser cancels before the shared cached refresh finishes.
+	china := make(chan []Instrument, 1)
+	crypto := make(chan []Instrument, 1)
+	go func() { china <- s.chinaSearch(ctx, query) }()
+	go func() { crypto <- s.cryptoSearch(ctx, query) }()
 	out := []Instrument{}
 	seen := map[string]bool{}
 	lower := strings.ToLower(query)
 	for _, i := range builtins {
 		if strings.Contains(strings.ToLower(i.Symbol+" "+i.Name+" "+i.Aliases+" "+i.Market), lower) {
-			out = append(out, i)
-			seen[i.ID] = true
-		}
-	}
-	for _, i := range s.cryptoSearch(ctx, query) {
-		if !seen[i.ID] {
 			out = append(out, i)
 			seen[i.ID] = true
 		}
@@ -708,6 +729,19 @@ func (s *marketService) search(ctx context.Context, query string) []Instrument {
 		e := s.getJSON(ctx, "https://query1.finance.yahoo.com/v1/finance/search?q="+url.QueryEscape(query)+"&quotesCount=12&newsCount=0", &v)
 		return v.Quotes, e
 	})
+	for _, source := range []chan []Instrument{china, crypto} {
+		select {
+		case rows := <-source:
+			for _, i := range rows {
+				if !seen[i.ID] {
+					out = append(out, i)
+					seen[i.ID] = true
+				}
+			}
+		case <-ctx.Done():
+			return out
+		}
+	}
 	if e != nil {
 		return out
 	}

@@ -57,9 +57,14 @@ button {
   cursor: pointer;
   line-height: 1.4;
 }
-button:hover:not(:disabled) {
-  background: var(--selected);
+@media (hover: hover) and (pointer: fine) {
+  button:hover:not(:disabled):not([aria-pressed="true"]) {
+    background: var(--subtle);
+    border-color: var(--accent);
+  }
 }
+button:active:not(:disabled) { filter: brightness(.92); }
+.detail-title:focus:not(:focus-visible) { outline: none; }
 button:disabled {
   cursor: default;
   opacity: 0.45;

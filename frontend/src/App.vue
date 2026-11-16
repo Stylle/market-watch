@@ -556,7 +556,7 @@ onUnmounted(() => {
             />
             <span v-else class="spark-empty" aria-hidden="true"></span>
             <span class="row-quote"
-              ><strong>{{ number(quotes[i.id]?.price) }}</strong
+              ><strong>{{ number((quotes[i.id]?.price ?? 0) > 0 ? quotes[i.id]?.price : null) }}</strong
               ><small :class="direction(quotes[i.id]?.percent)">{{
                 quotes[i.id]?.stale
                   ? "旧缓存"
@@ -637,7 +637,7 @@ onUnmounted(() => {
           <time class="today">{{ dateLabel }}</time>
         </div>
         <div class="price-line">
-          <strong class="big-price">{{ number(q?.price) }}</strong>
+          <strong class="big-price">{{ number((q?.price ?? 0) > 0 ? q?.price : null) }}</strong>
           <div class="price-changes" :class="direction(q?.percent)">
             <span>{{ signed(q?.change) }}</span
             ><span>{{ signed(q?.percent, "%") }}</span>
@@ -728,7 +728,7 @@ onUnmounted(() => {
             <dd>{{ number(q?.low) }}</dd>
           </div>
           <div>
-            <dt>成交量<span v-if="selected.kind === 'crypto'">（币）</span></dt>
+            <dt>成交量<span v-if="selected.kind === 'crypto'">（币）</span><span v-else-if="/^y:[0-9]{6}\.(SS|SZ|BJ)$/.test(selected.id)">（手）</span></dt>
             <dd>{{ compact(q?.volume) }}</dd>
           </div>
           <div>
@@ -880,12 +880,12 @@ onUnmounted(() => {
     </div>
     <button class="text-button danger" @click="reset">恢复默认自选</button>
     <section class="about">
-      <h3>关于观市 · Market Watch 0.1.1</h3>
+      <h3>关于观市 · Market Watch 0.1.2</h3>
       <p>
         自选、排序和设置只保存在当前浏览器。导出文件只包含设备偏好，不包含密钥。
       </p>
       <p>
-        股票/指数/ETF 使用 Yahoo Finance
+        A 股、境内指数及 ETF 使用东方财富公开接口（历史不复权、成交量为手）；其他股票/指数/ETF 使用 Yahoo Finance
         公开接口，可能限流、延迟或调整；同来源线路切换不等于独立报价验证。加密为
         Coinbase USD 交易对；现货黄金/白银为 Gold
         API，单位为美元/金衡盎司。来源暂不支持的数据以横线显示。
