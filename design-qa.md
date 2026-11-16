@@ -19,3 +19,14 @@ Rechecked 1920px, 2560×1440 and 3840×2160 in addition to phone/tablet/standard
 ## Title encoding patch (v0.1.1)
 
 The original HTML title contained literal U+FFFD replacement characters in source; this was not a browser font or response-charset problem. Replaced the damaged title with ASCII numeric HTML entities that decode to the intended Chinese title. Scanned tracked project text and the Currency Desk HTML title; no additional replacement-character corruption was found. Added a frontend title/charset regression test and a browser assertion on document.title. Existing responsive and interaction regression checks remain passing.
+## Watchlist interaction update (2026-11-16, local)
+
+Synced origin/main through201e952 (v0.1.3), preserving the other computer's A-share adapters, search and feed changes. User clarified that highlight should appear during hover/press and disappear after leaving, rather than persist for the current detail item.
+
+Each watchlist item now has a distinct12px rounded border, spacing and subtle surface contrast. Fine-pointer hover and active feedback are restored, without persistent selected-row fill or sticky coarse-pointer hover. aria-current still identifies the detail item; keyboard focus remains visible.
+
+Cards support direct mouse dragging and 350ms touch long-press through Vue.Draggable / SortableJS, with 180ms live neighbor movement and edge scrolling. Quick touch swipes retain native page scrolling. The menu offers move-to-top / move-to-bottom, disabled at the corresponding edge. Alt+arrows retain keyboard access and focus after reordering. Filtered ordering preserves the slots of hidden instruments. Drop suppresses accidental detail navigation; a subsequent tap works normally. Preferences remain device-local. Icon widths match their grid columns, with 12px clearance before instrument names at desktop/tablet/phone sizes.
+
+At1600px and above, shared header/content/footer width is90%, capped at2800px, with a readable sidebar width. Phone/tablet layouts remain fluid. Browser checks at375–3840 confirm no horizontal overflow, desktop outer margins, mouse drag persistence, keyboard reorder, touch drag and cleanup, transient hover after click, and existing search/filter/chart/preference flows. Backend tests and frontend build/tests pass. Screenshots inspected against the established composition. Result remains passed; this update is local and unpublished.
+
+Additional browser checks pass for live desktop neighbor movement before release, long-press touch sorting, quick-swipe scrolling without reorder, no detail navigation on drop, normal tap afterward, disabled edge actions, filtered ordering, reload persistence and icon/name clearance. Frontend seven tests/build, Go tests and vet pass. No browser runtime errors. Changes remain local and unpublished.

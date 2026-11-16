@@ -18,3 +18,5 @@ Tencent's returned `qt` snapshot is also used as a quote fallback: actual curren
 - Simple Icons brand SVGs (CC0; trademarks remain their owners'): https://github.com/simple-icons/simple-icons . NVIDIA and Toyota brand assets are local copies, see SIMPLE-ICONS-LICENSE.md. Other instruments use generic library icons rather than fabricated issuer logos.
 
 No remote fonts, analytics or ad scripts. Test fixtures contain illustrative prices only and never enter production API output.
+
+- Vue.Draggable 4.1.0 / SortableJS 1.15.7 (MIT): https://github.com/SortableJS/vue.draggable.next and https://github.com/SortableJS/Sortable . Local animated sorting, touch long-press and scroll handling; license copies included alongside this document.

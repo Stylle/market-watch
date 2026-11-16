@@ -19,6 +19,7 @@ import {
   PhArrowLeft,
   PhArrowClockwise,
   PhDotsThree,
+  PhDotsSixVertical,
   PhArrowUp,
   PhArrowDown,
   PhTrash,
@@ -30,6 +31,7 @@ import {
   PhInfo,
 } from "@phosphor-icons/vue";
 import AssetIcon from "./AssetIcon.vue";
+import Draggable from "vuedraggable";
 import PriceChart from "./PriceChart.vue";
 import { defaults, read, save, validate, searchLocal } from "./preferences.js";
 import type { Instrument, Quote, Chart } from "./types";
@@ -283,10 +285,13 @@ async function loadChart() {
   }
 }
 function select(i: Instrument, event: MouseEvent) {
+  if (Date.now() < suppressClickUntil) return;
   prefs.selected = i.id;
   mobileDetail.value = true;
   if (event.detail === 0)
-    nextTick(() => document.querySelector<HTMLElement>(".detail-title")?.focus());
+    nextTick(() =>
+      document.querySelector<HTMLElement>(".detail-title")?.focus(),
+    );
 }
 function back(event: MouseEvent) {
   mobileDetail.value = false;
@@ -298,12 +303,61 @@ function back(event: MouseEvent) {
   );
 }
 function move(id: string, offset: number) {
-  const list = [...prefs.items],
+  const list = [...orderedItems.value],
     i = list.findIndex((v: Instrument) => v.id === id),
     to = i + offset;
   if (to < 0 || to >= list.length) return;
   [list[i], list[to]] = [list[to], list[i]];
-  prefs.items = list;
+  orderedItems.value = list;
+}
+let suppressClickUntil = 0;
+const orderedItems = computed({
+  get: () => items.value,
+  set: (updated: Instrument[]) => {
+    const ids = new Set(items.value.map((i: Instrument) => i.id));
+    if (
+      updated.length !== ids.size ||
+      new Set(updated.map((i) => i.id)).size !== ids.size ||
+      updated.some((i) => !ids.has(i.id))
+    )
+      return;
+    let index = 0;
+    prefs.items = prefs.items.map((i: Instrument) =>
+      ids.has(i.id) ? updated[index++] : i,
+    );
+  },
+});
+function beginSort() {
+  menu.value = "";
+  suppressClickUntil = Number.POSITIVE_INFINITY;
+}
+function endSort() {
+  suppressClickUntil = Date.now() + 250;
+}
+function pin(id: string, edge: "top" | "bottom") {
+  const list = [...orderedItems.value],
+    index = list.findIndex((i) => i.id === id);
+  if (index < 0) return;
+  const [item] = list.splice(index, 1);
+  if (edge === "top") list.unshift(item);
+  else list.push(item);
+  orderedItems.value = list;
+  menu.value = "";
+  nextTick(() =>
+    Array.from(document.querySelectorAll<HTMLElement>(".watch-row"))
+      .find((row) => row.dataset.id === id)
+      ?.querySelector<HTMLElement>(".row-menu-button")
+      ?.focus(),
+  );
+}
+function moveDrag(id: string, offset: number) {
+  move(id, offset);
+  nextTick(() =>
+    Array.from(document.querySelectorAll<HTMLElement>(".watch-row"))
+      .find((row) => row.dataset.id === id)
+      ?.querySelector<HTMLElement>(".watch-drag")
+      ?.focus(),
+  );
 }
 function remove(id: string) {
   prefs.items = prefs.items.filter((v: Instrument) => v.id !== id);
@@ -518,90 +572,130 @@ onUnmounted(() => {
           {{ name }}
         </button>
       </nav>
-      <div class="watch-list" :aria-busy="quoteLoading">
-        <div v-if="!ready" class="loading">正在加载自选…</div>
-        <article
-          v-for="i in items"
-          :key="i.id"
-          class="watch-row"
-          :class="{ selected: prefs.selected === i.id }"
-          :data-id="i.id"
-        >
-          <button
-            class="row-select"
-            :aria-label="'查看 ' + i.symbol + ' ' + i.name"
-            :aria-current="prefs.selected === i.id ? 'true' : undefined"
-            @click="select(i, $event)"
+      <Draggable
+        v-model="orderedItems"
+        item-key="id"
+        class="watch-list"
+        :aria-busy="quoteLoading"
+        :animation="180"
+        :delay="350"
+        :delay-on-touch-only="true"
+        :touch-start-threshold="8"
+        :fallback-tolerance="6"
+        :force-fallback="true"
+        :support-pointer="false"
+        :fallback-on-body="true"
+        filter=".row-actions"
+        :prevent-on-filter="false"
+        ghost-class="sort-ghost"
+        chosen-class="sort-chosen"
+        drag-class="sort-floating"
+        @start="beginSort"
+        @end="endSort"
+      >
+        <template #header>
+          <div v-if="!ready" class="loading">正在加载自选…</div>
+        </template>
+        <template #item="{ element: i }">
+          <article
+            :key="i.id"
+            class="watch-row"
+            :class="{ selected: prefs.selected === i.id }"
+            :data-id="i.id"
           >
-            <AssetIcon :id="i.id" :kind="i.kind" /><span class="row-identity"
-              ><strong>{{ i.symbol }}</strong
-              ><small
-                >{{ i.name }} · {{ i.market || quotes[i.id]?.market }}</small
-              ></span
-            >
-            <PriceChart
-              v-if="quotes[i.id]?.spark?.length > 1"
-              :points="quotes[i.id].spark"
-              spark
-              :theme="themeValue"
-              :color="
-                quotes[i.id].percent == null
-                  ? '#9298a4'
-                  : quotes[i.id].percent! >= 0
-                    ? prefs.colors === 'green-up'
-                      ? '#56e1b5'
-                      : '#fb756c'
-                    : prefs.colors === 'green-up'
-                      ? '#fb756c'
-                      : '#56e1b5'
-              "
-            />
-            <span v-else class="spark-empty" aria-hidden="true"></span>
-            <span class="row-quote"
-              ><strong>{{ number((quotes[i.id]?.price ?? 0) > 0 ? quotes[i.id]?.price : null) }}</strong
-              ><small :class="direction(quotes[i.id]?.percent)">{{
-                quotes[i.id]?.stale
-                  ? "旧缓存"
-                  : quotes[i.id]?.error
-                    ? "暂不可用"
-                    : signed(quotes[i.id]?.percent, "%")
-              }}</small></span
-            >
-          </button>
-          <div class="row-actions">
             <button
-              class="row-menu-button"
-              :aria-label="'管理 ' + i.symbol"
-              :aria-expanded="menu === i.id"
-              @click="menu = menu === i.id ? '' : i.id"
+              class="watch-drag"
+              :aria-label="'拖动排序 ' + i.symbol"
+              title="拖动排序；手机长按卡片后拖动"
+              @keydown.alt.up.prevent="moveDrag(i.id, -1)"
+              @keydown.alt.down.prevent="moveDrag(i.id, 1)"
             >
-              <PhDotsThree :size="20" />
+              <PhDotsSixVertical :size="19" />
             </button>
-            <div v-if="menu === i.id" class="row-menu">
+            <button
+              class="row-select"
+              :aria-label="'查看 ' + i.symbol + ' ' + i.name"
+              :aria-current="prefs.selected === i.id ? 'true' : undefined"
+              @click="select(i, $event)"
+            >
+              <AssetIcon :id="i.id" :kind="i.kind" /><span class="row-identity"
+                ><strong>{{ i.symbol }}</strong
+                ><small
+                  >{{ i.name }} · {{ i.market || quotes[i.id]?.market }}</small
+                ></span
+              >
+              <PriceChart
+                v-if="quotes[i.id]?.spark?.length > 1"
+                :points="quotes[i.id].spark"
+                spark
+                :theme="themeValue"
+                :color="
+                  quotes[i.id].percent == null
+                    ? '#9298a4'
+                    : quotes[i.id].percent! >= 0
+                      ? prefs.colors === 'green-up'
+                        ? '#56e1b5'
+                        : '#fb756c'
+                      : prefs.colors === 'green-up'
+                        ? '#fb756c'
+                        : '#56e1b5'
+                "
+              />
+              <span v-else class="spark-empty" aria-hidden="true"></span>
+              <span class="row-quote"
+                ><strong>{{
+                  number(
+                    (quotes[i.id]?.price ?? 0) > 0 ? quotes[i.id]?.price : null,
+                  )
+                }}</strong
+                ><small :class="direction(quotes[i.id]?.percent)">{{
+                  quotes[i.id]?.stale
+                    ? "旧缓存"
+                    : quotes[i.id]?.error
+                      ? "暂不可用"
+                      : signed(quotes[i.id]?.percent, "%")
+                }}</small></span
+              >
+            </button>
+            <div class="row-actions">
               <button
-                :disabled="prefs.items[0]?.id === i.id"
-                @click="move(i.id, -1)"
+                class="row-menu-button"
+                :aria-label="'管理 ' + i.symbol"
+                :aria-expanded="menu === i.id"
+                @click="menu = menu === i.id ? '' : i.id"
               >
-                <PhArrowUp :size="16" />上移</button
-              ><button
-                :disabled="prefs.items.at(-1)?.id === i.id"
-                @click="move(i.id, 1)"
-              >
-                <PhArrowDown :size="16" />下移</button
-              ><button class="danger" @click="remove(i.id)">
-                <PhTrash :size="16" />删除自选
+                <PhDotsThree :size="20" />
               </button>
+              <div v-if="menu === i.id" class="row-menu">
+                <button
+                  :disabled="items[0]?.id === i.id"
+                  @click="pin(i.id, 'top')"
+                >
+                  <PhArrowUp :size="16" />置顶</button
+                ><button
+                  :disabled="items.at(-1)?.id === i.id"
+                  @click="pin(i.id, 'bottom')"
+                >
+                  <PhArrowDown :size="16" />置底</button
+                ><button class="danger" @click="remove(i.id)">
+                  <PhTrash :size="16" />删除自选
+                </button>
+              </div>
             </div>
+          </article></template
+        >
+        <template #footer>
+          <div v-if="ready && !items.length" class="empty-list">
+            <PhChartLine :size="32" />
+            <p>
+              {{
+                prefs.items.length ? "此分类还没有自选" : "添加第一个观察标的"
+              }}
+            </p>
+            <button @click="openSearch"><PhPlus :size="18" />添加标的</button>
           </div>
-        </article>
-        <div v-if="ready && !items.length" class="empty-list">
-          <PhChartLine :size="32" />
-          <p>
-            {{ prefs.items.length ? "此分类还没有自选" : "添加第一个观察标的" }}
-          </p>
-          <button @click="openSearch"><PhPlus :size="18" />添加标的</button>
-        </div>
-      </div>
+        </template>
+      </Draggable>
       <div class="list-footer">
         <span>{{ prefs.items.length }} 个自选</span
         ><button
@@ -639,7 +733,9 @@ onUnmounted(() => {
           <time class="today">{{ dateLabel }}</time>
         </div>
         <div class="price-line">
-          <strong class="big-price">{{ number((q?.price ?? 0) > 0 ? q?.price : null) }}</strong>
+          <strong class="big-price">{{
+            number((q?.price ?? 0) > 0 ? q?.price : null)
+          }}</strong>
           <div class="price-changes" :class="direction(q?.percent)">
             <span>{{ signed(q?.change) }}</span
             ><span>{{ signed(q?.percent, "%") }}</span>
@@ -730,7 +826,12 @@ onUnmounted(() => {
             <dd>{{ number(q?.low) }}</dd>
           </div>
           <div>
-            <dt>成交量<span v-if="selected.kind === 'crypto'">（币）</span><span v-else-if="/^y:[0-9]{6}\.(SS|SZ|BJ)$/.test(selected.id)">（手）</span></dt>
+            <dt>
+              成交量<span v-if="selected.kind === 'crypto'">（币）</span
+              ><span v-else-if="/^y:[0-9]{6}\.(SS|SZ|BJ)$/.test(selected.id)"
+                >（手）</span
+              >
+            </dt>
             <dd>{{ compact(q?.volume) }}</dd>
           </div>
           <div>
@@ -882,12 +983,14 @@ onUnmounted(() => {
     </div>
     <button class="text-button danger" @click="reset">恢复默认自选</button>
     <section class="about">
-      <h3>关于观市 · Market Watch 0.1.3</h3>
+      <h3>关于观市 · Market Watch 0.1.4</h3>
       <p>
         自选、排序和设置只保存在当前浏览器。导出文件只包含设备偏好，不包含密钥。
       </p>
       <p>
-        A 股、境内指数及 ETF 使用东方财富公开接口（历史不复权、成交量为手）；其他股票/指数/ETF 使用 Yahoo Finance
+        A 股、境内指数及 ETF
+        使用东方财富公开接口（历史不复权、成交量为手）；其他股票/指数/ETF 使用
+        Yahoo Finance
         公开接口，可能限流、延迟或调整；同来源线路切换不等于独立报价验证。加密为
         Coinbase USD 交易对；现货黄金/白银为 Gold
         API，单位为美元/金衡盎司。来源暂不支持的数据以横线显示。

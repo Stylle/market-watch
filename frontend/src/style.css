@@ -63,8 +63,12 @@ button {
     border-color: var(--accent);
   }
 }
-button:active:not(:disabled) { filter: brightness(.92); }
-.detail-title:focus:not(:focus-visible) { outline: none; }
+button:active:not(:disabled) {
+  filter: brightness(0.92);
+}
+.detail-title:focus:not(:focus-visible) {
+  outline: none;
+}
 button:disabled {
   cursor: default;
   opacity: 0.45;
@@ -1277,22 +1281,24 @@ dialog .icon-button {
   width: 50px;
   height: 50px;
 }
-/* Wide desktop displays: use the viewport while keeping the watchlist readable. */
+/* Wide desktops retain margins without returning to a narrow fixed canvas. */
 @media (min-width: 1600px) {
   .topbar,
   .workspace,
   .app-footer {
-    max-width: none;
-    width: 100%;
+    width: 90%;
+    max-width: 2800px;
+    margin-left: auto;
+    margin-right: auto;
   }
   .topbar {
-    grid-template-columns: clamp(400px, 23vw, 560px) minmax(280px, 720px) 1fr;
-    padding-left: 32px;
-    padding-right: 32px;
+    grid-template-columns: clamp(340px, 23vw, 440px) minmax(280px, 720px) 1fr;
+    padding-left: 24px;
+    padding-right: 24px;
   }
   .workspace {
-    grid-template-columns: clamp(400px, 23vw, 560px) minmax(0, 1fr);
-    padding: 0 24px;
+    grid-template-columns: clamp(340px, 23vw, 440px) minmax(0, 1fr);
+    padding: 0 12px;
     gap: 20px;
     min-height: calc(100dvh - 140px);
   }
@@ -1309,19 +1315,11 @@ dialog .icon-button {
     min-height: 430px;
   }
   .app-footer {
-    padding-left: 32px;
-    padding-right: 32px;
-  }
-  .row-select {
-    grid-template-columns: 36px minmax(0, 1fr) 80px 112px;
-  }
-  .spark-chart,
-  .spark-empty {
-    width: 80px;
+    padding-left: 24px;
+    padding-right: 24px;
   }
 }
-
-@media (min-width: 2000px) {
+@media (min-width: 2400px) {
   .stats {
     grid-template-columns: repeat(6, minmax(0, 1fr));
   }
@@ -1332,5 +1330,140 @@ dialog .icon-button {
     gap: 10px;
     min-height: 88px;
     padding: 16px;
+  }
+}
+.watch-list {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+.watch-row {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) 24px;
+  gap: 4px;
+  border: 1px solid #444d5c;
+  border-radius: 12px;
+  background: #25292f;
+  padding: 2px 7px;
+}
+.watch-drag {
+  padding: 0;
+  width: 22px;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.watch-drag:active {
+  cursor: grabbing;
+}
+.watch-row .row-select {
+  grid-template-columns: 32px minmax(0, 1fr) 54px 90px;
+  gap: 12px;
+  padding: 12px 0;
+}
+.watch-row .spark-chart,
+.watch-row .spark-empty {
+  width: 54px;
+}
+.watch-row .row-actions {
+  width: 24px;
+}
+.watch-row .row-menu-button {
+  opacity: 1;
+}
+.watch-row:active {
+  background: var(--selected);
+  border-color: var(--accent);
+}
+.watch-row.sort-ghost {
+  opacity: 0.28;
+  border-style: dashed;
+}
+.watch-row.sort-chosen {
+  border-color: var(--accent);
+}
+.watch-row.sort-floating {
+  box-shadow: 0 12px 30px #0005;
+  background: var(--surface);
+  opacity: 0.96;
+  cursor: grabbing;
+}
+.watch-drag {
+  touch-action: pan-y;
+}
+.watch-row .row-select {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .watch-row:hover {
+    background: var(--selected);
+    border-color: var(--accent);
+  }
+  .watch-row .row-select:hover:not(:disabled) {
+    background: transparent;
+    border-color: transparent;
+  }
+  .watch-drag:hover:not(:disabled) {
+    background: transparent;
+  }
+}
+:root[data-theme="light"] .watch-row {
+  background: #f7f9fc;
+  border-color: #c2cbd8;
+}
+@media (hover: hover) and (pointer: fine) {
+  :root[data-theme="light"] .watch-row:hover {
+    background: var(--selected);
+    border-color: var(--accent);
+  }
+}
+@media (max-width: 1250px) {
+  .watch-row .row-select {
+    grid-template-columns: 32px minmax(0, 1fr) 74px;
+    gap: 12px;
+  }
+  .watch-row .spark-chart,
+  .watch-row .spark-empty {
+    display: none;
+  }
+}
+@media (max-width: 700px) {
+  .watch-list {
+    gap: 9px;
+  }
+  .watch-row {
+    grid-template-columns: 24px minmax(0, 1fr) 24px;
+    padding: 2px 6px;
+    gap: 3px;
+  }
+  .watch-drag {
+    width: 24px;
+    min-height: 48px;
+  }
+  .watch-row .row-select {
+    grid-template-columns: 28px minmax(0, 1fr) 88px;
+    gap: 12px;
+    min-height: 76px;
+  }
+  .watch-row .row-identity strong,
+  .watch-row .row-quote strong {
+    font-size: 16px;
+  }
+}
+
+.watch-row .asset-icon {
+  width: 32px;
+  height: 32px;
+}
+@media (max-width: 700px) {
+  .watch-row .asset-icon {
+    width: 28px;
+    height: 28px;
   }
 }

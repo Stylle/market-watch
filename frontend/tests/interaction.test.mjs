@@ -28,5 +28,5 @@ test('existing CN watchlist IDs remain importable and Chinese searchable',()=>{
 test('unavailable first quotes do not appear as a real zero price',()=>{
  const app=readFileSync(new URL('../src/App.vue',import.meta.url),'utf8');
  assert.match(app,/number\(\(q\?\.price \?\? 0\) > 0 \? q\?\.price : null\)/);
- assert.match(app,/number\(\(quotes\[i.id\]\?\.price \?\? 0\) > 0/);
+ assert.match(app,/number\(\s*\(quotes\[i.id\]\?\.price \?\? 0\) > 0/);
 });

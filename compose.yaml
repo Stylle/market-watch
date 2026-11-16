@@ -1,5 +1,5 @@
 services:
   market-watch:
-    image: stylle/market-watch:v0.1.3
+    image: stylle/market-watch:v0.1.4
     ports: ["28185:8080"]
     restart: unless-stopped
