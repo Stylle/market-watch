@@ -17,10 +17,10 @@
 Go单进程内嵌Vue前端，无数据库。最简部署：
 
 ```sh
-docker run -d --name market-watch --restart unless-stopped -p 28185:8080 stylle/market-watch:v0.1.4
+docker run -d --name market-watch --restart unless-stopped -p 28185:8080 stylle/market-watch:v0.1.5
 ```
 
-访问 `http://服务器:28185`。镜像支持 `linux/amd64`、`linux/arm64`；提供版本标签 `v0.1.4` 和 `latest`。也可使用仓库 `compose.yaml` 执行 `docker compose up -d`。无须登录或配置强制Key。所有自选保存在设备端；不需要挂载数据卷。更换域名/协议/端口属于不同浏览器存储空间，可先导出偏好后导入。
+访问 `http://服务器:28185`。镜像支持 `linux/amd64`、`linux/arm64`；提供版本标签 `v0.1.5` 和 `latest`。也可使用仓库 `compose.yaml` 执行 `docker compose up -d`。无须登录或配置强制Key。所有自选保存在设备端；不需要挂载数据卷。更换域名/协议/端口属于不同浏览器存储空间，可先导出偏好后导入。
 
 现货黄金/白银**当前报价免Key**；历史曲线可选配置环境变量 `GOLD_API_KEY`，见 [Gold API文档](https://gold-api.com/docs)。不配置时仍能看现货价，图表会提示需要Key。免费历史接口每小时共享10次额度，应用按部署实例预留余量、最多9次/小时，并缓存区间结果；别在不同实例共用同一Key后高频刷新。密钥只通过服务端请求头使用，不传到浏览器。
 

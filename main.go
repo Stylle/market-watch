@@ -19,7 +19,7 @@ import (
 	_ "time/tzdata"
 )
 
-const version = "0.1.4"
+const version = "0.1.5"
 
 //go:embed all:web
 var assets embed.FS

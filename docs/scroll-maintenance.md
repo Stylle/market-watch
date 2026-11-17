@@ -1,6 +1,6 @@
 # List and chart scrolling maintenance
 
-Local maintenance, 2026-11-17; not yet published.
+Included in v0.1.5, 2026-11-17.
 
 The watchlist and detail panel now have independent scrolling within a viewport-sized application frame. Adding up to50 instruments no longer stretches the chart or pushes it off-screen when scrolling the list. Wide-screen horizontal margins remain. Short viewports retain scrollable detail content rather than clipping statistics. Fatal/retry content also remains scrollable.
 
