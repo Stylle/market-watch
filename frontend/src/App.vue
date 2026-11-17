@@ -59,6 +59,17 @@ const searchDialog = ref<HTMLDialogElement>(),
   settingsDialog = ref<HTMLDialogElement>(),
   searchInput = ref<HTMLInputElement>(),
   importInput = ref<HTMLInputElement>();
+const detailPanel = ref<HTMLElement>();
+let touchSortArmed = false;
+function preventSortScroll(event: TouchEvent) {
+  if (touchSortArmed && event.cancelable) event.preventDefault();
+}
+function armSort() {
+  touchSortArmed = true;
+}
+function disarmSort() {
+  touchSortArmed = false;
+}
 const selected = computed(
     () =>
       prefs.items.find((i: Instrument) => i.id === prefs.selected) as
@@ -288,6 +299,10 @@ function select(i: Instrument, event: MouseEvent) {
   if (Date.now() < suppressClickUntil) return;
   prefs.selected = i.id;
   mobileDetail.value = true;
+  if (matchMedia("(max-width: 700px)").matches)
+    nextTick(() => {
+      if (detailPanel.value) detailPanel.value.scrollTop = 0;
+    });
   if (event.detail === 0)
     nextTick(() =>
       document.querySelector<HTMLElement>(".detail-title")?.focus(),
@@ -332,6 +347,7 @@ function beginSort() {
   suppressClickUntil = Number.POSITIVE_INFINITY;
 }
 function endSort() {
+  disarmSort();
   suppressClickUntil = Date.now() + 250;
 }
 function pin(id: string, edge: "top" | "bottom") {
@@ -502,6 +518,11 @@ onMounted(() => {
   media.addEventListener("change", applyTheme);
   document.addEventListener("visibilitychange", onVisible);
   document.addEventListener("click", outside);
+  document.addEventListener("touchmove", preventSortScroll, {
+    passive: false,
+    capture: true,
+  });
+  window.addEventListener("blur", disarmSort);
 });
 onUnmounted(() => {
   quoteController?.abort();
@@ -513,6 +534,8 @@ onUnmounted(() => {
   media?.removeEventListener("change", applyTheme);
   document.removeEventListener("visibilitychange", onVisible);
   document.removeEventListener("click", outside);
+  document.removeEventListener("touchmove", preventSortScroll, true);
+  window.removeEventListener("blur", disarmSort);
 });
 </script>
 <template>
@@ -585,12 +608,17 @@ onUnmounted(() => {
         :force-fallback="true"
         :support-pointer="false"
         :fallback-on-body="true"
+        :bubble-scroll="false"
+        :scroll-sensitivity="48"
+        :scroll-speed="9"
         filter=".row-actions"
         :prevent-on-filter="false"
         ghost-class="sort-ghost"
         chosen-class="sort-chosen"
         drag-class="sort-floating"
         @start="beginSort"
+        @choose="armSort"
+        @unchoose="disarmSort"
         @end="endSort"
       >
         <template #header>
@@ -712,7 +740,7 @@ onUnmounted(() => {
         {{ quoteError }}
       </p>
     </aside>
-    <section class="detail-panel" :aria-busy="chartLoading">
+    <section ref="detailPanel" class="detail-panel" :aria-busy="chartLoading">
       <template v-if="selected">
         <button class="back-button text-button" @click="back">
           <PhArrowLeft :size="20" />我的自选

@@ -64,3 +64,5 @@ LISTEN_ADDR=127.0.0.1:28185 go run .
 [GitHub 源码](https://github.com/Stylle/market-watch) · [Docker Hub](https://hub.docker.com/r/stylle/market-watch) · [MIT 许可证](LICENSE)
 
 自选排序：电脑可直接拖动卡片，手机长按卡片后上下拖动，相邻卡片实时让位；短划仍可滚动。卡片菜单提供置顶、置底和删除，拖动手柄聚焦后可用 Alt+↑/↓ 调整顺序。
+
+滚动布局：自选列表和行情详情独立滚动，桌面图表高度不随自选数量增长。手机长按排序只在列表内自动滚动，短划正常浏览；进入详情从顶部显示，返回自选保留列表位置。
